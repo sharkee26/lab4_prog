@@ -13,7 +13,7 @@ public:
     size_t block_size;
 
     // Конструктор с параметром block_size
-    explicit CustomAllocator(size_t block_size) : block_size(block_size), allocated(0) { //explicit предотвращает неявное преобразование типов при инициализации
+    explicit CustomAllocator(size_t block_size) : block_size(block_size), allocated(0) {
         expand(); // Расширяем буфер при создании аллокатора
     }
 
@@ -30,10 +30,10 @@ public:
     // Метод для выделения памяти
     T* allocate(std::size_t n) {
         if (n == 0) return nullptr; // Защита от нулевого запроса
-        if (allocated + n * sizeof(T) > buffer.size()) {  //Проверка на достаточность памяти
+        if (allocated + n * sizeof(T) > buffer.size()) {  // Проверка на достаточность памяти
             expand(); 
         }
-        T* result = reinterpret_cast<T*>(buffer.data() + allocated); //Используется чтобы привести указатель типа char* к типу указателя на нужный объект
+        T* result = reinterpret_cast<T*>(buffer.data() + allocated); // Приведение указателя типа char* к типу указателя на нужный объект
         allocated += n * sizeof(T);
         
         // Отслеживаем выделенные объекты
@@ -48,7 +48,6 @@ public:
             // Если объект был выделен, удаляем его из отслеживаемых объектов
             allocated_objects.erase(p);
             p->~T(); // Вызываем деструктор объекта
-        
         }
     }
 
@@ -122,21 +121,37 @@ private:
     std::vector<T*> data; // Хранит указатели на выделенные элементы
 };
 
-// Прикладной код
-int main() {
-   // Создание экземпляра std::map<int, int> и заполнение его
-   std::map<int, int> factorial_map;
-   for (int i = 0; i < 10; ++i) {
+// Функция для заполнения контейнера факториалами
+template <typename Container>
+void fillFactorials(Container& container, int count) {
+   for (int i = 0; i < count; ++i) {
        int factorial = 1;
        for (int j = 1; j <= i; ++j) {
            factorial *= j;
        }
-       factorial_map[i] = factorial;
+       container[i] = factorial;  // Используем оператор [] для записи в контейнер
    }
+}
 
-   // Вывод значений из std::map
+// Прикладной код
+int main() {
+   // Создание экземпляра std::map<int, int> и заполнение его стандартным аллокатором
+   std::map<int, int> factorial_map;
+   fillFactorials(factorial_map, 10);
+
+   // Вывод значений из std::map с стандартным аллокатором
    std::cout << "std::map with default allocator:" << std::endl;
    for (const auto& pair : factorial_map) {
+       std::cout << pair.first << " " << pair.second << std::endl;
+   }
+
+   // Создание экземпляра std::map без пользовательского аллокатора и заполнение его значениями факториалов
+   std::map<int, int> default_map;
+   fillFactorials(default_map, 10);
+
+   // Вывод значений из стандартной карты без пользовательского аллокатора
+   std::cout << "\nstd::map without custom allocator:" << std::endl;
+   for (const auto& pair : default_map) {
        std::cout << pair.first << " " << pair.second << std::endl;
    }
 
@@ -145,14 +160,8 @@ int main() {
    
    std::map<int, int, std::less<int>, CustomAllocator<std::pair<const int, int>>> custom_map(custom_alloc);
    
-   // Заполнение кастомной карты
-   for (int i = 0; i < 10; ++i) {
-       int factorial = 1;
-       for (int j = 1; j <= i; ++j) {
-           factorial *= j;
-       }
-       custom_map[i] = factorial;
-   }
+   // Заполнение кастомной карты факториалами с помощью функции fillFactorials
+   fillFactorials(custom_map, 10);
 
    // Вывод значений из кастомной карты
    std::cout << "\nstd::map with custom allocator:" << std::endl;
@@ -164,7 +173,7 @@ int main() {
    // Создание экземпляра своего контейнера для хранения int
    CustomContainer<int, CustomAllocator<int>> my_container;
 
-   // Заполнение контейнера элементами от 0 до 9
+   // Заполнение контейнера элементами от 0 до 9 с помощью функции add()
    for (int i = 0; i < 10; ++i) {
        my_container.add(i);
    }
